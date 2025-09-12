@@ -24,3 +24,4 @@ mod render;
 mod template;
 mod types;
 mod utils;
+mod js;

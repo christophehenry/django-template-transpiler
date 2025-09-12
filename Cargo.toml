@@ -1,19 +1,7 @@
-[workspace]
-members = ["dtl-lexer"]
-resolver = "3"
-
-[workspace.package]
-edition = "2024"
-
-[workspace.dependencies]
-miette = { version = "7.6.0", features = ["fancy"] }
-thiserror = "2.0.16"
-num-bigint = "0.4.6"
-
 [package]
 name = "django-rusty-templates"
 version = "0.1.0"
-edition.workspace = true
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -25,21 +13,19 @@ cached = "0.56.0"
 either = "1.15.0"
 encoding_rs = "0.8.35"
 html-escape = "0.2.13"
-miette.workspace = true
-num-bigint.workspace = true
+miette = { version = "7.6.0", features = ["fancy"] }
+num-bigint = "0.4.6"
 pyo3 = { version = "0.27.0", features = ["num-bigint"] }
 sugar_path = "1.2.0"
-thiserror.workspace = true
+thiserror = "2.0.16"
+unicode-xid = "0.2.6"
 regex = "1.11.2"
 unicode-normalization = "0.1.24"
 num-traits = "0.2.19"
-dtl-lexer = { path = "dtl-lexer" }
+oxc = { version = "0.87.0", features = ["full"] }
 
 [dev-dependencies]
 
 quickcheck = "1.0.3"
 temp-env = "0.3.6"
 cargo-llvm-cov = "0.6.18"
-
-[package.metadata.cargo-shear]
-ignored = ["cargo-llvm-cov"]
