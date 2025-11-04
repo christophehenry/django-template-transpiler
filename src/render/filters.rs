@@ -553,7 +553,7 @@ mod tests {
     use crate::filters::{AddSlashesFilter, DefaultFilter, LowerFilter, UpperFilter};
     use crate::parse::TagElement;
     use crate::render::Render;
-    use crate::template::django_rusty_templates::{EngineData, Template};
+    use crate::template::django_rusty_templates_legacy::{EngineData, Template};
     use crate::types::{Argument, ArgumentType, Text, Variable};
 
     use pyo3::types::{PyDict, PyString};

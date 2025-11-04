@@ -1,23 +1,17 @@
-{% load cut from custom_filters %}
-
-<html>
-    <body>
-        <p>
-            {{ foo|default:1 }}
-            {{ foo|default:1.0 }}
-            {{ foo|default:"bar" }}
-            {{ foo|default:'baz' }}
-            {{ foo|default:_('hello') }}
-            Some text
-            {{ bar|lower }}
-            {{ bar|cut:"foo" }}
-            {{ foo.bar }}
-            {% url "bio" %}
-            {% url "bio" 1 %}
-            {% url "bio" 2.0 %}
-            {% url "bio" 'baz' %}
-            {% url "bio" _('hello') %}
-            {% url "bio" foo|lower %}
-        </p>
-    </body>
-</html>
+<p>
+    {{ foo|default:1 }}
+    {{ foo|default:1.0 }}
+    {{ foo|default:"bar" }}
+    {{ foo|default:'baz' }}
+    {{ foo|default:_('hello') }}
+    Some text
+    {{ bar|lower }}
+    {{ bar|cut:"foo" }}
+    {{ foo.bar }}
+    {% url "bio" %}
+    {% url "bio" 1 %}
+    {% url "bio" 2.0 %}
+    {% url "bio" 'baz' %}
+    {% url "bio" _('hello') %}
+    {% url "bio" foo|lower %}
+</p>

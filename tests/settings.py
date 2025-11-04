@@ -1,8 +1,16 @@
-import os
+from importlib.resources import files as importlib_resources
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+import django_rusty_templates
+
+DEBUG = True
+
+BASE_DIR = Path(__file__).parent
+
+SECRET_KEY = "test"
 
 INSTALLED_APPS = [
+    "django.contrib.staticfiles",
     "tests.apps.DummyAppConfig",
 ]
 
@@ -10,31 +18,8 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": ["tests/templates"],
+        "APP_DIRS": True,
         "OPTIONS": {
-            "libraries": {
-                "custom_filters": "tests.templatetags.custom_filters",
-                "custom_tags": "tests.templatetags.custom_tags",
-                "more_filters": "tests.templatetags.more_filters",
-                "no_filters": "tests.templatetags.no_filters",
-                "no_tags": "tests.templatetags.no_tags",
-            },
-            "context_processors": [
-                "django.template.context_processors.request",
-            ],
-        },
-    },
-    {
-        "BACKEND": "django_rusty_templates.RustyTemplates",
-        "DIRS": ["tests/templates"],
-        "NAME": "rusty",
-        "OPTIONS": {
-            "libraries": {
-                "custom_filters": "tests.templatetags.custom_filters",
-                "custom_tags": "tests.templatetags.custom_tags",
-                "more_filters": "tests.templatetags.more_filters",
-                "no_filters": "tests.templatetags.no_filters",
-                "no_tags": "tests.templatetags.no_tags",
-            },
             "context_processors": [
                 "django.template.context_processors.request",
             ],
@@ -43,3 +28,7 @@ TEMPLATES = [
 ]
 
 ROOT_URLCONF = "tests.urls"
+
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "static"
+STATICFILES_DIRS = [importlib_resources(django_rusty_templates).joinpath("data")]
