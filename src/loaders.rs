@@ -7,7 +7,7 @@ use pyo3::exceptions::PyUnicodeError;
 use pyo3::prelude::*;
 use sugar_path::SugarPath;
 
-use crate::template::django_rusty_templates::{EngineData, Template};
+use crate::template::django_rusty_templates_legacy::{EngineData, Template};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LoaderError {

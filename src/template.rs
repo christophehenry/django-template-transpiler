@@ -1,7 +1,6 @@
 use pyo3::prelude::*;
 
-#[pymodule]
-pub mod django_rusty_templates {
+pub mod django_rusty_templates_legacy {
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -527,7 +526,7 @@ pub mod django_rusty_templates {
 
 #[cfg(test)]
 mod tests {
-    use super::django_rusty_templates::*;
+    use super::django_rusty_templates_legacy::*;
 
     use pyo3::Python;
     use pyo3::types::{PyDict, PyDictMethods, PyString};

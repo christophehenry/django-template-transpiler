@@ -13,7 +13,7 @@ use super::types::{AsBorrowedContent, Content, Context, PyContext};
 use super::{Evaluate, Render, RenderResult, Resolve, ResolveFailures, ResolveResult};
 use crate::error::{AnnotatePyErr, PyRenderError, RenderError};
 use crate::parse::{For, IfCondition, SimpleBlockTag, SimpleTag, Tag, TagElement, Url};
-use crate::template::django_rusty_templates::NoReverseMatch;
+use crate::template::django_rusty_templates_legacy::NoReverseMatch;
 use crate::types::TemplateString;
 use crate::utils::PyResultMethods;
 

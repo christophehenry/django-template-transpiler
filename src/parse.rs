@@ -1657,7 +1657,7 @@ mod tests {
     use crate::lex::common::LexerError;
     use crate::{
         filters::{DefaultFilter, ExternalFilter, LowerFilter},
-        template::django_rusty_templates::{EngineData, Template},
+        template::django_rusty_templates_legacy::{EngineData, Template},
     };
 
     fn get_external_filter(node: &TokenTree) -> Arc<Py<PyAny>> {
