@@ -18,10 +18,11 @@ macro_rules! todo {
 
 mod error;
 mod filters;
+mod js;
+mod lex;
 mod loaders;
 mod parse;
 mod render;
 mod template;
 mod types;
 mod utils;
-mod js;

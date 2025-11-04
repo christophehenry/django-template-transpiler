@@ -1696,7 +1696,7 @@ mod tests {
 
     use crate::{
         filters::{DefaultFilter, ExternalFilter, LowerFilter},
-        template::django_rusty_templates::{EngineData, Template},
+        template::django_rusty_templates_legacy::{EngineData, Template},
     };
     use dtl_lexer::common::LexerError;
 

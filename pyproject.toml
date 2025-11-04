@@ -19,6 +19,7 @@ python-source = "python"
 [tool.pytest]
 strict_xfail = true
 DJANGO_SETTINGS_MODULE = "tests.settings"
+django_debug_mode = true
 
 [dependency-groups]
 dev = [
@@ -27,6 +28,7 @@ dev = [
     "maturin",
     "pytest",
     "pytest-django",
+    "pytest-playwright",
     "pytest-cov",
     "ruff",
     "pre-commit"
