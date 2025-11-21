@@ -4,7 +4,7 @@ mod utils;
 use pyo3::pymodule;
 
 #[pymodule]
-pub mod django_rusty_templates {
+pub mod django_template_transpiler {
     use crate::js::parser::Parser;
     use crate::types::TemplateString;
     use pyo3::types::PyAnyMethods;

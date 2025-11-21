@@ -20,36 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-latest", "ubuntu-latest", "windows-latest"]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: ["ubuntu-latest"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    # on Windows, make sure line-endings are consistent for test suite
-    - if: runner.os == 'Windows'
-      run: |
-        git config --global core.autocrlf false
-        git config --global core.eol lf
-
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
         persist-credentials: false
-
-    - name: Install gettext for translation testing (Ubuntu)
-      if: runner.os == 'Linux'
-      run: sudo apt-get install gettext
-
-    - name: Install gettext for translation testing (macOS)
-      if: runner.os == 'macOS'
-      run: brew install gettext
-
-    - name: Install gettext for translation testing (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        LATEST_URL=$(curl -s "https://api.github.com/repos/mlocati/gettext-iconv-windows/releases/latest" |
-          grep -o 'https://github.com/mlocati/gettext-iconv-windows/releases/download/[^"]*-shared-64\.zip')
-        curl -L "$LATEST_URL" -o "$RUNNER_TEMP/gettext.zip"
-        unzip "$RUNNER_TEMP/gettext.zip" -d "$RUNNER_TEMP/gettext"
-        echo "$RUNNER_TEMP/gettext/bin" >> $GITHUB_PATH
 
     - name: Set up Python
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
@@ -59,108 +36,10 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
 
-    - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@ab447118c8d4ca5f33111a28109bed3c1aeff11b
-
     - name: Install Django Rusty Templates
       run: |
-        cargo llvm-cov show-env --export-prefix > llvm-cov-env.sh
-        source llvm-cov-env.sh
         uv run maturin develop
-
-    - name: Build translation files
-      run: |
-        uv run -m django compilemessages
+        uv run playwright install
 
     - name: Test with pytest
-      run: |
-        cargo llvm-cov show-env --export-prefix > llvm-cov-env.sh
-        source llvm-cov-env.sh
-        uv run pytest --cov --cov-report=xml
-
-    - name: Get rust coverage report
-      run: |
-        cargo llvm-cov show-env --export-prefix > llvm-cov-env.sh
-        source llvm-cov-env.sh
-        cargo llvm-cov report --codecov --output-path codecov.json
-
-    - name: Upload to codecov
-      uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
-      with:
-        files: coverage.xml,codecov.json
-        fail_ci_if_error: true
-
-  django-test-suite:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
-    permissions:
-      pull-requests: write
-      contents: read
-    steps:
-    - name: Set up Python
-      uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
-
-    - name: Checkout main
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      with:
-        ref: main
-        persist-credentials: false
-
-    - name: Run Django test suite (main)
-      run: uv run scripts/run_django_test_suite.py --parsed-output main_test_output
-
-    - name: Checkout current branch
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      with:
-        clean: false
-        persist-credentials: false
-
-    - name: Run Django test suite (current branch)
-      run: uv run scripts/run_django_test_suite.py --parsed-output branch_test_output
-
-    - name: Compare test suites & generate comment
-      id: generate-comment
-      run: |
-        echo '<!-- generated-comment ecosystem -->' >> test-diff-result
-        echo "### Django test suite conformance" >> test-diff-result
-
-        diff --unified main_test_output branch_test_output >> diff_result || true
-        if [ "$(cat diff_result | wc -l)" -gt 0 ]; then
-          {
-            echo "<details><summary>"
-            echo "ℹ️ Test pass rate changed from <code>$(cat diff_result | grep "^-" | grep -oP '\d+\.\d+%')</code> to <code>$(cat diff_result | grep "^+" | grep -oP '\d+\.\d+%')</code>."
-            echo "</summary>"
-            printf '\n```diff\n'
-            cat diff_result
-            printf '```\n'
-            echo "</details>"
-          } >> test-diff-result
-        else
-          {
-            echo "✅ no changes detected running Django test suite."
-            printf '\n```diff\n'
-            head -n2 branch_test_output
-            printf '```\n'
-          } >> test-diff-result
-        fi
-        cat test-diff-result > "$GITHUB_STEP_SUMMARY"
-        cat test-diff-result
-
-    - name: Upload test diff result
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
-      with:
-        name: test-diff-result
-        path: test-diff-result
-
-    - name: Store pr-number
-      run: |
-        echo ${{ github.event.number }} > pr-number
-
-    - name: Upload pr-number
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
-      with:
-        name: pr-number
-        path: pr-number
+      run: uv run pytest --browser firefox --tracing=retain-on-failure
