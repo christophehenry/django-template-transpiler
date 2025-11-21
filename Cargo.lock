@@ -347,7 +347,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "django-rusty-templates"
+name = "django-template-transpiler"
 version = "0.1.0"
 dependencies = [
  "cached",

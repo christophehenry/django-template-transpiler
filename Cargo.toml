@@ -1,11 +1,11 @@
 [package]
-name = "django-rusty-templates"
+name = "django-template-transpiler"
 version = "0.1.0"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "django_rusty_templates"
+name = "django_template_transpiler"
 crate-type = ["cdylib"]
 
 [dependencies]

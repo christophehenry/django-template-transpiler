@@ -1,7 +1,7 @@
 use crate::js::utils::{SimplerAstMethods, SomeWrap};
 use crate::lex::START_TAG_LEN;
 use crate::lex::core::{Lexer, TokenType};
-use crate::lex::variable::{ArgumentType, lex_variable};
+use crate::lex::variable::{ArgumentType, lex_translation, lex_variable};
 use crate::types::TemplateString;
 use oxc::allocator::Allocator;
 use oxc::ast::ast::{BinaryOperator, Expression, FunctionType, NumberBase, SourceType, Statement};
@@ -76,7 +76,7 @@ impl<'t> Parser<'t> {
                 .map(|it| {
                     let it = it.unwrap();
                     let mut properties = vec![(
-                        "name",
+                        "filterName",
                         ast_builder.expression_string_literal(
                             SPAN,
                             self.template.content(it.at),
@@ -97,10 +97,9 @@ impl<'t> Parser<'t> {
                                 self.template.content(filter_arg.at),
                                 None,
                             ),
-                            ArgumentType::TranslatedText => ast_builder.expression_string_literal(
-                                SPAN,
-                                self.template.content(filter_arg.at),
-                                None,
+                            ArgumentType::TranslatedText => *self.get_translation_fn(
+                                ast_builder,
+                                self.template.content(lex_translation(filter_arg.at)),
                             ),
                             ArgumentType::Variable => *self.get_variable_fn(
                                 ast_builder,
@@ -130,15 +129,28 @@ impl<'t> Parser<'t> {
                 ["engine", "variable"],
                 vec![ast_builder.expression_object_simple(vec![
                     (
+                        "varName",
+                        ast_builder.expression_string_literal(SPAN, variable_name, None),
+                    ),
+                    (
                         "context",
                         ast_builder.expression_identifier(SPAN, "context"),
                     ),
-                    (
-                        "name",
-                        ast_builder.expression_string_literal(SPAN, variable_name, None),
-                    ),
                     ("filters", ast_builder.expression_array_simple(filter_exprs)),
                 ])],
+            )
+            .into()
+    }
+
+    fn get_translation_fn(
+        &self,
+        ast_builder: &AstBuilder<'t>,
+        text_to_translate: &'t str,
+    ) -> Box<Expression<'t>> {
+        ast_builder
+            .expression_call_simple(
+                ["engine", "translate"],
+                vec![ast_builder.expression_string_literal(SPAN, text_to_translate, None)],
             )
             .into()
     }

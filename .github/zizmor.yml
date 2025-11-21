@@ -1,5 +1,0 @@
-rules:
-  cache-poisoning:
-    ignore:
-      # sccache is disabled for release builds
-      - build.yml

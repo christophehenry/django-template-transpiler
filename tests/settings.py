@@ -1,7 +1,7 @@
 from importlib.resources import files as importlib_resources
 from pathlib import Path
 
-import django_rusty_templates
+import django_template_transpiler
 
 DEBUG = True
 
@@ -13,6 +13,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "tests.apps.DummyAppConfig",
 ]
+
+ROOT_URLCONF = "tests.urls"
 
 TEMPLATES = [
     {
@@ -27,8 +29,13 @@ TEMPLATES = [
     },
 ]
 
-ROOT_URLCONF = "tests.urls"
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
-STATICFILES_DIRS = [importlib_resources(django_rusty_templates).joinpath("data")]
+STATICFILES_DIRS = [importlib_resources(django_template_transpiler).joinpath("data")]

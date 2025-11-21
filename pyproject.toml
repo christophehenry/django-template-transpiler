@@ -3,7 +3,7 @@ requires = ["maturin>=1.7,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "django-rusty-templates"
+name = "django-template-transpiler"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Rust",
@@ -18,18 +18,17 @@ python-source = "python"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
-django_debug_mode = true
 
 [dependency-groups]
 dev = [
     "django",
-    "hypothesis",
     "maturin",
     "pytest",
     "pytest-django",
     "pytest-playwright",
-    "pytest-cov",
+    "playwright",
     "ruff",
+    "pre-commit",
 ]
 
 [tool.ruff]
