@@ -143,6 +143,13 @@ pub fn lex_variable(
     )))
 }
 
+pub fn lex_translation(at: (usize, usize)) -> (usize, usize) {
+    let (start, len) = at;
+    let start = start + START_TRANSLATE_LEN + QUOTE_LEN;
+    let len = len - START_TRANSLATE_LEN - END_TRANSLATE_LEN - 2 * QUOTE_LEN;
+    (start, len)
+}
+
 #[derive(Debug)]
 pub struct FilterLexer<'t> {
     rest: &'t str,
