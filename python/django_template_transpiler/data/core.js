@@ -6,6 +6,36 @@ const None = Symbol.for("None")
 const True = true
 const False = false
 
+
+class Context {
+    constructor(dict, parentContext = undefined) {
+        this._entries = new Map(Object.entries(dict))
+
+        this.parentContext = (
+            parentContext instanceof Context
+                ? parentContext
+                : new Proxy(new Map(Object.entries({None, True, False})), {
+                    get(target, prop) {
+                        const value = target.get(prop)
+                        return value !== undefined ? value : ""
+                    }
+                })
+        )
+
+        return new Proxy(this, {
+            get(target, prop) {
+                const value = target._entries.get(prop)
+                return value !== undefined ? value : target.parentContext[prop]
+            }
+        })
+    }
+
+    extend(dict) {
+        return new Context(dict, this)
+    }
+}
+
+
 class SafeString {
     static isSafe(value) {
         return value instanceof SafeString
@@ -35,12 +65,12 @@ function escape(value) {
 }
 
 function toNumber(value) {
-    return (typeof value === "number") ? value : parseFloat(String(value))
+    return Number.isFinite(value) ? value : parseFloat(String(value))
 }
 
 function toInteger(value) {
     const result = parseInt(value, 10)
-    if (!Number.isInteger(result)) {
+    if (!Number.isFinite(result)) {
         throw SyntaxError(`${value} is not a integer`)
     }
     return result
@@ -322,12 +352,22 @@ class Engine {
         this._filters = new Filters()
     }
 
-    _context(name, context) {
-        return context.hasOwnProperty(name) ? context[name] : ""
+    /**
+     * @param {Object} dict
+     * @returns {Context}
+     */
+    context(dict) {
+        return new Context(dict)
     }
 
+    /**
+     * @param {string} varName
+     * @param {Context} context
+     * @param {Filters} filters
+     * @returns {string}
+     */
     variable({varName, context, filters}) {
-        let value = this._context(varName, context)
+        let value = context[varName]
         for (const {filterName, argument} of filters) {
             value = escape(this._filters[filterName](value, argument))
         }

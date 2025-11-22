@@ -1,6 +1,6 @@
 use oxc::ast::ast::{
-    Argument, ArrayExpressionElement, Expression, FormalParameterKind, FormalParameters,
-    PropertyKind,
+    Argument, ArrayExpressionElement, Declaration, Expression, FormalParameterKind,
+    FormalParameters, PropertyKind, VariableDeclarationKind,
 };
 use oxc::ast::{AstBuilder, NONE};
 use oxc::span::SPAN;
@@ -53,6 +53,13 @@ pub(super) trait SimplerAstMethods<'a> {
     ) -> Expression<'a>;
 
     fn expression_array_simple(&self, items: Vec<Expression<'a>>) -> Expression<'a>;
+
+    fn declaration_variable_simple(
+        &self,
+        kind: VariableDeclarationKind,
+        name: &'a str,
+        init: Expression<'a>,
+    ) -> Declaration<'a>;
 }
 impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
     fn expression_call_simple<const N: usize>(
@@ -134,6 +141,30 @@ impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
         self.expression_array(
             SPAN,
             self.vec_from_iter(items.into_iter().map(|it| ArrayExpressionElement::from(it))),
+        )
+    }
+
+    fn declaration_variable_simple(
+        &self,
+        kind: VariableDeclarationKind,
+        name: &'a str,
+        init: Expression<'a>,
+    ) -> Declaration<'a> {
+        self.declaration_variable(
+            SPAN,
+            VariableDeclarationKind::Const,
+            self.vec_from_array([self.variable_declarator(
+                SPAN,
+                kind,
+                self.binding_pattern(
+                    self.binding_pattern_kind_binding_identifier(SPAN, name),
+                    NONE,
+                    false,
+                ),
+                init.wrap(),
+                false,
+            )]),
+            false,
         )
     }
 }
