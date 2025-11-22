@@ -4,7 +4,10 @@ use crate::lex::core::{Lexer, TokenType};
 use crate::lex::variable::{ArgumentType, lex_translation, lex_variable};
 use crate::types::TemplateString;
 use oxc::allocator::Allocator;
-use oxc::ast::ast::{BinaryOperator, Expression, FunctionType, NumberBase, SourceType, Statement};
+use oxc::ast::ast::{
+    BinaryOperator, Expression, FunctionType, NumberBase, SourceType, Statement,
+    VariableDeclarationKind,
+};
 use oxc::ast::{AstBuilder, NONE};
 use oxc::codegen::Codegen;
 use oxc::span::SPAN;
@@ -161,7 +164,7 @@ impl<'t> Parser<'t> {
         ast_builder: &AstBuilder<'t>,
         result_to_return: Expression<'t>,
     ) -> Box<Statement<'t>> {
-        let params = ast_builder.formal_parameters_simple(["engine", "context"]);
+        let params = ast_builder.formal_parameters_simple(["engine", "_context"]);
         let return_statement = ast_builder.statement_return(SPAN, result_to_return.wrap());
         let export = ast_builder.export_default_declaration_kind_function_declaration(
             SPAN,
@@ -175,7 +178,21 @@ impl<'t> Parser<'t> {
             params,
             NONE,
             ast_builder
-                .alloc_function_body(SPAN, ast_builder.vec(), ast_builder.vec1(return_statement))
+                .alloc_function_body(
+                    SPAN,
+                    ast_builder.vec(),
+                    ast_builder.vec_from_array([
+                        Statement::from(ast_builder.declaration_variable_simple(
+                            VariableDeclarationKind::Const,
+                            "context",
+                            ast_builder.expression_call_simple(
+                                ["engine", "context"],
+                                vec![ast_builder.expression_identifier(SPAN, "_context")],
+                            ),
+                        )),
+                        return_statement,
+                    ]),
+                )
                 .wrap(),
         );
         Statement::from(ast_builder.module_declaration_export_default_declaration(SPAN, export))
@@ -200,7 +217,7 @@ mod tests {
     #[test]
     fn test_empty() {
         assert_template(
-            r#"export default function(engine, context) {return "";}"#,
+            r#"export default function(engine, _context) {const context = engine.context(_context);return "";}"#,
             "",
         );
     }
@@ -208,7 +225,7 @@ mod tests {
     #[test]
     fn test_simple_text() {
         assert_template(
-            r#"export default function(engine, context) {return "<div>Some text here</div>";}"#,
+            r#"export default function(engine, _context) {const context = engine.context(_context);return "<div>Some text here</div>";}"#,
             r#"<div>Some text here</div>"#,
         );
     }
