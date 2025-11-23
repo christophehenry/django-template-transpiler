@@ -1,8 +1,8 @@
-use crate::js::utils::{SimplerAstMethods, SomeWrap};
-use crate::lex::START_TAG_LEN;
-use crate::lex::core::{Lexer, TokenType};
-use crate::lex::variable::{ArgumentType, lex_translation, lex_variable};
-use crate::types::TemplateString;
+use crate::utils::{SimplerAstMethods, SomeWrap};
+use dtl_lexer::core::{Lexer, TokenType};
+use dtl_lexer::types::TemplateString;
+use dtl_lexer::variable::{ArgumentType, lex_variable};
+use dtl_lexer::{START_TAG_LEN, TemplateContent};
 use oxc::allocator::Allocator;
 use oxc::ast::ast::{
     BinaryOperator, Expression, FunctionType, NumberBase, SourceType, Statement,
@@ -34,7 +34,7 @@ impl<'t> Parser<'t> {
             match token.token_type {
                 TokenType::Text => expressions.push(ast_builder.expression_string_literal(
                     SPAN,
-                    self.template.content(token.at),
+                    token.content(self.template),
                     None,
                 )),
                 TokenType::Comment => continue,
@@ -74,7 +74,7 @@ impl<'t> Parser<'t> {
         ast_builder: &AstBuilder<'t>,
     ) -> Box<Expression<'t>> {
         if let Some((variable_token, filter_lexer)) = lex_variable(variable, start).unwrap() {
-            let variable_name = self.template.content(variable_token.at);
+            let variable_name = variable_token.content(self.template);
             let filters = filter_lexer
                 .map(|it| {
                     let it = it.unwrap();
@@ -82,7 +82,7 @@ impl<'t> Parser<'t> {
                         "filterName",
                         ast_builder.expression_string_literal(
                             SPAN,
-                            self.template.content(it.at),
+                            it.content(self.template),
                             None,
                         ),
                     )];
@@ -91,22 +91,20 @@ impl<'t> Parser<'t> {
                         let arg_expr = match filter_arg.argument_type {
                             ArgumentType::Numeric => ast_builder.expression_numeric_literal(
                                 SPAN,
-                                self.template.content(filter_arg.at).parse::<f64>().unwrap(),
+                                filter_arg.content(self.template).parse::<f64>().unwrap(),
                                 None,
                                 NumberBase::Decimal,
                             ),
                             ArgumentType::Text => ast_builder.expression_string_literal(
                                 SPAN,
-                                self.template.content(filter_arg.at),
+                                filter_arg.content(self.template),
                                 None,
                             ),
-                            ArgumentType::TranslatedText => *self.get_translation_fn(
-                                ast_builder,
-                                self.template.content(lex_translation(filter_arg.at)),
-                            ),
+                            ArgumentType::TranslatedText => *self
+                                .get_translation_fn(ast_builder, filter_arg.content(self.template)),
                             ArgumentType::Variable => *self.get_variable_fn(
                                 ast_builder,
-                                self.template.content(filter_arg.at),
+                                filter_arg.content(self.template),
                                 Vec::new(),
                             ),
                         };
@@ -202,8 +200,8 @@ impl<'t> Parser<'t> {
 
 #[cfg(test)]
 mod tests {
-    use crate::js::parser::Parser;
-    use crate::types::TemplateString;
+    use crate::parser::Parser;
+    use dtl_lexer::types::TemplateString;
     use regex::Regex;
 
     fn assert_template(expected: &str, template: &str) {

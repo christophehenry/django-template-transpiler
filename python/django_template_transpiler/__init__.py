@@ -1,3 +1,3 @@
-from .django_template_transpiler import transpile_from_string
+from .django_template_transpiler import transpile
 
-__all__ = ["transpile_from_string"]
+__all__ = ["transpile"]

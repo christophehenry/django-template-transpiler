@@ -3,29 +3,12 @@ name = "django-template-transpiler"
 version = "0.1.0"
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "django_template_transpiler"
 crate-type = ["cdylib"]
 
 [dependencies]
-cached = "0.56.0"
-either = "1.15.0"
-encoding_rs = "0.8.35"
-html-escape = "0.2.13"
-miette = { version = "7.6.0", features = ["fancy"] }
-num-bigint = "0.4.6"
 pyo3 = { version = "0.27.0", features = ["num-bigint"] }
-sugar_path = "1.2.0"
-thiserror = "2.0.16"
-unicode-xid = "0.2.6"
 regex = "1.11.2"
-unicode-normalization = "0.1.24"
-num-traits = "0.2.19"
-oxc = { version = "0.97.0", features = ["full"] }
-
-[dev-dependencies]
-
-quickcheck = "1.0.3"
-temp-env = "0.3.6"
-cargo-llvm-cov = "0.6.18"
+oxc = { version = "0.98.0", features = ["full"] }
+dtl-lexer = { git = "https://github.com/LilyFirefly/django-rusty-templates" }
