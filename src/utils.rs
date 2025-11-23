@@ -1,21 +1,170 @@
-use pyo3::prelude::*;
-use pyo3::type_object::PyTypeInfo;
+use oxc::ast::ast::{
+    Argument, ArrayExpressionElement, Declaration, Expression, FormalParameterKind,
+    FormalParameters, PropertyKind, VariableDeclarationKind,
+};
+use oxc::ast::{AstBuilder, NONE};
+use oxc::span::SPAN;
 
-pub trait PyResultMethods<T> {
-    fn ok_or_isinstance_of<E>(self, py: Python<'_>) -> PyResult<PyResult<T>>
-    where
-        E: PyTypeInfo;
+pub(super) trait SomeWrap<T> {
+    fn wrap(self) -> Option<T>;
 }
 
-impl<T> PyResultMethods<T> for PyResult<T> {
-    fn ok_or_isinstance_of<E>(self, py: Python<'_>) -> PyResult<PyResult<T>>
+impl<T> SomeWrap<T> for T {
+    fn wrap(self) -> Option<T> {
+        Some(self)
+    }
+}
+
+impl<T> SomeWrap<T> for Option<T> {
+    fn wrap(self) -> Self {
+        self
+    }
+}
+
+pub(super) trait SimplerAstMethods<'a> {
+    /**
+     * Produces ``obj.fn_name(arg1, arg2, arg3)``
+     *
+     * Example:
+     *
+     *   ast_builder
+     *   .expression_call_simple(
+     *       ["obj", "fn_name"],
+     *       vec![
+     *           ast_builder.expression_identifier(SPAN, "arg1"),
+     *           ast_builder.expression_identifier(SPAN, "arg2"),
+     *           ast_builder.expression_identifier(SPAN, "arg3"),
+     *       ]
+     *   )
+     */
+    fn expression_call_simple<const N: usize>(
+        &self,
+        names: [&'a str; N],
+        args: Vec<Expression<'a>>,
+    ) -> Expression<'a>;
+
+    fn formal_parameters_simple<A>(&self, params: A) -> FormalParameters<'a>
     where
-        E: PyTypeInfo,
+        A: Into<Vec<&'a str>>;
+
+    fn expression_object_simple(
+        &self,
+        properties: Vec<(&'a str, Expression<'a>)>,
+    ) -> Expression<'a>;
+
+    fn expression_array_simple(&self, items: Vec<Expression<'a>>) -> Expression<'a>;
+
+    fn declaration_variable_simple(
+        &self,
+        kind: VariableDeclarationKind,
+        name: &'a str,
+        init: Expression<'a>,
+    ) -> Declaration<'a>;
+}
+impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
+    fn expression_call_simple<const N: usize>(
+        &self,
+        names: [&'a str; N],
+        args: Vec<Expression<'a>>,
+    ) -> Expression<'a> {
+        assert!(N > 0);
+
+        let expr = match names.len() {
+            1 => self.expression_identifier(SPAN, names[0]),
+            _ => names.iter().enumerate().fold(
+                self.expression_string_literal(SPAN, "", None),
+                |acc, (idx, &it)| {
+                    if idx == 0 {
+                        self.expression_identifier(SPAN, it)
+                    } else {
+                        Expression::from(self.member_expression_static(
+                            SPAN,
+                            acc,
+                            self.identifier_name(SPAN, it),
+                            false,
+                        ))
+                    }
+                },
+            ),
+        };
+        self.expression_call(
+            SPAN,
+            expr,
+            NONE,
+            self.vec_from_iter(args.into_iter().map(Argument::from)),
+            false,
+        )
+    }
+
+    fn formal_parameters_simple<A>(&self, params: A) -> FormalParameters<'a>
+    where
+        A: Into<Vec<&'a str>>,
     {
-        match self {
-            Ok(obj) => Ok(Ok(obj)),
-            Err(e) if e.is_instance_of::<E>(py) => Ok(Err(e)),
-            Err(e) => Err(e),
-        }
+        self.formal_parameters(
+            SPAN,
+            FormalParameterKind::FormalParameter,
+            self.vec_from_iter(params.into().iter().map(|&param| {
+                self.plain_formal_parameter(
+                    SPAN,
+                    self.binding_pattern(
+                        self.binding_pattern_kind_binding_identifier(SPAN, param),
+                        NONE,
+                        false,
+                    ),
+                )
+            })),
+            NONE,
+        )
+    }
+
+    fn expression_object_simple(
+        &self,
+        properties: Vec<(&'a str, Expression<'a>)>,
+    ) -> Expression<'a> {
+        self.expression_object(
+            SPAN,
+            self.vec_from_iter(properties.into_iter().map(|(name, expr)| {
+                self.object_property_kind_object_property(
+                    SPAN,
+                    PropertyKind::Init,
+                    self.property_key_static_identifier(SPAN, name),
+                    expr,
+                    false,
+                    false,
+                    false,
+                )
+            })),
+        )
+    }
+
+    fn expression_array_simple(&self, items: Vec<Expression<'a>>) -> Expression<'a> {
+        self.expression_array(
+            SPAN,
+            self.vec_from_iter(items.into_iter().map(ArrayExpressionElement::from)),
+        )
+    }
+
+    fn declaration_variable_simple(
+        &self,
+        kind: VariableDeclarationKind,
+        name: &'a str,
+        init: Expression<'a>,
+    ) -> Declaration<'a> {
+        self.declaration_variable(
+            SPAN,
+            VariableDeclarationKind::Const,
+            self.vec_from_array([self.variable_declarator(
+                SPAN,
+                kind,
+                self.binding_pattern(
+                    self.binding_pattern_kind_binding_identifier(SPAN, name),
+                    NONE,
+                    false,
+                ),
+                init.wrap(),
+                false,
+            )]),
+            false,
+        )
     }
 }

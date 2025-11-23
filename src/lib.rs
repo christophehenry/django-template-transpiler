@@ -1,28 +1,21 @@
-/// Custom `todo!` macro that returns a pickable `PyNotImplementedError` instead of
-/// a non-pickable `PanicException`. This allows Django's test suite to run in parallel.
-///
-/// This macro shadows the standard library's `todo!` macro throughout the crate.
-#[macro_export]
-macro_rules! todo {
-    () => {{
-        let err: ::pyo3::PyErr = ::pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented");
-        return Err(err.into())
-    }};
-    ($($arg:tt)+) => {{
-        let err: ::pyo3::PyErr = ::pyo3::exceptions::PyNotImplementedError::new_err(
-            format!("not yet implemented: {}", format_args!($($arg)+))
-        );
-        return Err(err.into())
-    }};
+mod parser;
+mod utils;
+
+use crate::parser::Parser;
+use dtl_lexer::types::IntoTemplateString;
+use pyo3::pymodule;
+
+pub fn transpile(raw_template: &str) -> String {
+    Parser::new(raw_template.into_template_string()).render()
 }
 
-mod error;
-mod filters;
-mod js;
-mod lex;
-mod loaders;
-mod parse;
-mod render;
-mod template;
-mod types;
-mod utils;
+#[pymodule]
+pub mod django_template_transpiler {
+    use pyo3::{PyResult, Python, pyfunction};
+
+    #[pyfunction]
+    #[pyo3(signature = (raw_template))]
+    pub fn transpile(_py: Python<'_>, raw_template: &str) -> PyResult<String> {
+        Ok(crate::transpile(raw_template))
+    }
+}

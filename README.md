@@ -15,7 +15,7 @@ need. For instance, when you find yourself working with a designer who's feeling
 design components that formsets are particularly unsuited to render. In these situations,
 you may end up writing a nice custom template. However, you may also end up with a template
 that's too complex to render on the front by just replacing the
-[formset's `empty_form` `__prefix__`](https://docs.djangoproject.com/en/5.2/topics/forms/formsets/#empty-form)
+[`BaseFormSet.empty_form`'s `__prefix__`](https://docs.djangoproject.com/en/5.2/topics/forms/formsets/#empty-form)
 placeholder.
 
 In the recent years, in a situation like this, the Django community turned to a pattern
@@ -27,7 +27,7 @@ limited by slow bandwidth, access quotas or some other form of resource cost. In
 situation, you can't afford to perform an HTTP request each time you want to add a new
 subform on your page.
 
-This is Django Template Transpiler comes into light, by allowing you to use your previous
+This is where Django Template Transpiler comes into light, by allowing you to use your previous
 Django template as a single source of truth for both the front and the back. Very basically
 Django Template Transpiler parses a Django template and converts it into a JS render function
 to use on the front to update small parts of the UI.
@@ -40,7 +40,7 @@ warmly welcomed.
 ## Acknowledgments
 
 DTT heavily relies on [`django-rusty-templates`](https://github.com/LilyFirefly/django-rusty-templates)
-for parsing templates—to the point that is it basically a fork of it. It also relies on
+for parsing templates—to the point that it basically started as a fork of it. It also relies on
 [oxc](https://github.com/oxc-project/oxc) to generate JS code from the parsed template.
 
 ## TODO
