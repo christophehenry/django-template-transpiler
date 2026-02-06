@@ -22,6 +22,8 @@ impl<T> SomeWrap<T> for Option<T> {
 }
 
 pub(super) trait SimplerAstMethods<'a> {
+    fn expression_empty_string_literal(&self) -> Expression<'a>;
+
     /**
      * Produces ``obj.fn_name(arg1, arg2, arg3)``
      *
@@ -53,6 +55,7 @@ pub(super) trait SimplerAstMethods<'a> {
     ) -> Expression<'a>;
 
     fn expression_array_simple(&self, items: Vec<Expression<'a>>) -> Expression<'a>;
+    fn expression_symbol(&self, name: &'a str) -> Expression<'a>;
 
     fn declaration_variable_simple(
         &self,
@@ -60,8 +63,18 @@ pub(super) trait SimplerAstMethods<'a> {
         name: &'a str,
         init: Expression<'a>,
     ) -> Declaration<'a>;
+    fn expression_conditional_safe(
+        &self,
+        test: Expression<'a>,
+        consequent: Expression<'a>,
+        alternate: Expression<'a>,
+    ) -> Expression<'a>;
 }
 impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
+    fn expression_empty_string_literal(&self) -> Expression<'a> {
+        self.expression_string_literal(SPAN, "", None)
+    }
+
     fn expression_call_simple<const N: usize>(
         &self,
         names: [&'a str; N],
@@ -144,6 +157,13 @@ impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
         )
     }
 
+    fn expression_symbol(&self, name: &'a str) -> Expression<'a> {
+        self.expression_call_simple(
+            ["Symbol", "for"],
+            vec![self.expression_string_literal(SPAN, name, None)],
+        )
+    }
+
     fn declaration_variable_simple(
         &self,
         kind: VariableDeclarationKind,
@@ -165,6 +185,56 @@ impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
                 false,
             )]),
             false,
+        )
+    }
+
+    fn expression_conditional_safe(
+        &self,
+        test: Expression<'a>,
+        consequent: Expression<'a>,
+        alternate: Expression<'a>,
+    ) -> Expression<'a> {
+        self.expression_parenthesized(
+            SPAN,
+            self.expression_conditional(
+                SPAN,
+                self.expression_parenthesized(SPAN, test),
+                consequent,
+                alternate,
+            ),
+        )
+    }
+}
+
+pub(super) trait EngineMethods<'a> {
+    fn get_translation_fn(&self, text_to_translate: &'a str) -> Expression<'a>;
+    fn get_variable_fn(
+        &self,
+        var_expr: (&'a str, Expression<'a>),
+        filter_exprs: Vec<Expression<'a>>,
+    ) -> Expression<'a>;
+}
+
+impl<'a> EngineMethods<'a> for AstBuilder<'a> {
+    fn get_translation_fn(&self, text_to_translate: &'a str) -> Expression<'a> {
+        self.expression_call_simple(
+            ["engine", "translate"],
+            vec![self.expression_string_literal(SPAN, text_to_translate, None)],
+        )
+    }
+
+    fn get_variable_fn(
+        &self,
+        var_expr: (&'a str, Expression<'a>),
+        filter_exprs: Vec<Expression<'a>>,
+    ) -> Expression<'a> {
+        self.expression_call_simple(
+            ["engine", "variable"],
+            vec![self.expression_object_simple(vec![
+                var_expr,
+                ("context", self.expression_identifier(SPAN, "context")),
+                ("filters", self.expression_array_simple(filter_exprs)),
+            ])],
         )
     }
 }

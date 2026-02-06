@@ -37,12 +37,12 @@ class Context {
 
 
 class SafeString {
-    static isSafe(value) {
-        return value instanceof SafeString
-    }
-
     constructor(value) {
         this.value = value
+    }
+
+    static isSafe(value) {
+        return value instanceof SafeString
     }
 
     [Symbol.toStringTag]() {
@@ -145,6 +145,7 @@ class Filters {
     }
 
     dictsort() {
+        todo()
     }
 
     dictsortreversed() {
@@ -346,10 +347,19 @@ class Filters {
     }
 }
 
+const utils = Object.freeze({
+    contains(first, second) {
+        return Array.from(first).contains(second)
+    },
+    do_is(first, second) {
+        return first === second
+    }
+})
 
 class Engine {
     constructor() {
         this._filters = new Filters()
+        this._ = utils
     }
 
     /**
@@ -362,12 +372,13 @@ class Engine {
 
     /**
      * @param {string} varName
+     * @param {any} literal
      * @param {Context} context
      * @param {Filters} filters
      * @returns {string}
      */
-    variable({varName, context, filters}) {
-        let value = context[varName]
+    variable({varName, literal, context, filters}) {
+        let value = literal || context[varName]
         for (const {filterName, argument} of filters) {
             value = escape(this._filters[filterName](value, argument))
         }
@@ -378,6 +389,7 @@ class Engine {
         console.warn("Translation not implemented")
         return value
     }
+
 }
 
 export default Engine
