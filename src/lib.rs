@@ -1,12 +1,16 @@
 mod parser;
+mod tag_if;
 mod utils;
+mod variable;
 
 use crate::parser::Parser;
 use dtl_lexer::types::IntoTemplateString;
+use oxc::allocator::Allocator;
 use pyo3::pymodule;
 
 pub fn transpile(raw_template: &str) -> String {
-    Parser::new(raw_template.into_template_string()).render()
+    let allocator = Allocator::default();
+    Parser::new(&allocator, raw_template.into_template_string()).render()
 }
 
 #[pymodule]

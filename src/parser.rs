@@ -1,159 +1,136 @@
+use crate::tag_if::ParseIf;
 use crate::utils::{SimplerAstMethods, SomeWrap};
+use crate::variable::parse_variable;
 use dtl_lexer::core::{Lexer, TokenType};
+use dtl_lexer::tag::{Tag, lex_tag};
 use dtl_lexer::types::TemplateString;
-use dtl_lexer::variable::{ArgumentType, lex_variable};
 use dtl_lexer::{START_TAG_LEN, TemplateContent};
 use oxc::allocator::Allocator;
 use oxc::ast::ast::{
-    BinaryOperator, Expression, FunctionType, NumberBase, SourceType, Statement,
-    VariableDeclarationKind,
+    BinaryOperator, Expression, FunctionType, SourceType, Statement, VariableDeclarationKind,
 };
 use oxc::ast::{AstBuilder, NONE};
 use oxc::codegen::Codegen;
 use oxc::span::SPAN;
 
 pub struct Parser<'t> {
-    template: TemplateString<'t>,
-    lexer: Lexer<'t>,
+    pub(crate) template: TemplateString<'t>,
+    pub(crate) lexer: Lexer<'t>,
+    pub(crate) ast_builder: AstBuilder<'t>,
 }
 
 impl<'t> Parser<'t> {
-    pub fn new(template: TemplateString<'t>) -> Self {
+    pub(crate) fn new(allocator: &'t Allocator, template: TemplateString<'t>) -> Self {
         Self {
             template,
             lexer: Lexer::new(template),
+            ast_builder: AstBuilder::new(allocator),
         }
     }
 
     pub fn render(&mut self) -> String {
-        let allocator = Allocator::default();
-        let ast_builder = AstBuilder::new(&allocator);
+        let result = self.parse_all();
 
-        let mut expressions = Vec::<Expression>::new();
-        while let Some(token) = self.lexer.next() {
-            match token.token_type {
-                TokenType::Text => expressions.push(ast_builder.expression_string_literal(
-                    SPAN,
-                    token.content(self.template),
-                    None,
-                )),
-                TokenType::Comment => continue,
-                TokenType::Variable => expressions.push(*self.parse_variable(
-                    token.content(self.template),
-                    token.at.0 + START_TAG_LEN,
-                    &ast_builder,
-                )),
-                TokenType::Tag => continue,
-            };
-        }
-
-        let result = expressions
-            .into_iter()
-            .reduce(|acc, expr| {
-                ast_builder.expression_binary(SPAN, acc, BinaryOperator::Addition, expr)
-            })
-            .unwrap_or_else(|| ast_builder.expression_string_literal(SPAN, "", None));
-
-        let program = ast_builder.program(
+        let program = self.ast_builder.program(
             SPAN,
             SourceType::mjs(),
             "",
-            ast_builder.vec(),
+            self.ast_builder.vec(),
             None,
-            ast_builder.vec(),
-            ast_builder.vec1(*self.get_export_fn(&ast_builder, result)),
+            self.ast_builder.vec(),
+            self.ast_builder
+                .vec1(*self.get_export_fn(&self.ast_builder, result)),
         );
 
         Codegen::new().build(&program).code
     }
 
-    fn parse_variable(
-        &self,
-        variable: &str,
-        start: usize,
-        ast_builder: &AstBuilder<'t>,
-    ) -> Box<Expression<'t>> {
-        if let Some((variable_token, filter_lexer)) = lex_variable(variable, start).unwrap() {
-            let variable_name = variable_token.content(self.template);
-            let filters = filter_lexer
-                .map(|it| {
-                    let it = it.unwrap();
-                    let mut properties = vec![(
-                        "filterName",
-                        ast_builder.expression_string_literal(
-                            SPAN,
-                            it.content(self.template),
-                            None,
-                        ),
-                    )];
+    pub(crate) fn parse_all(&mut self) -> Expression<'t> {
+        let (_, result) = self.parse_until_tag_or_end([]);
+        result
+    }
 
-                    if let Some(filter_arg) = it.argument {
-                        let arg_expr = match filter_arg.argument_type {
-                            ArgumentType::Numeric => ast_builder.expression_numeric_literal(
-                                SPAN,
-                                filter_arg.content(self.template).parse::<f64>().unwrap(),
-                                None,
-                                NumberBase::Decimal,
-                            ),
-                            ArgumentType::Text => ast_builder.expression_string_literal(
-                                SPAN,
-                                filter_arg.content(self.template),
-                                None,
-                            ),
-                            ArgumentType::TranslatedText => *self
-                                .get_translation_fn(ast_builder, filter_arg.content(self.template)),
-                            ArgumentType::Variable => *self.get_variable_fn(
-                                ast_builder,
-                                filter_arg.content(self.template),
-                                Vec::new(),
-                            ),
-                        };
-                        properties.push(("argument", arg_expr));
+    pub(crate) fn parse_until<const N: usize>(
+        &mut self,
+        closing_tags: [&'t str; N],
+    ) -> (Tag, Expression<'t>) {
+        let (tag, result) = self.parse_until_tag_or_end(closing_tags);
+        (tag.unwrap(), result)
+    }
+
+    fn parse_until_tag_or_end<const N: usize>(
+        &mut self,
+        closing_tags: [&'t str; N],
+    ) -> (Option<Tag>, Expression<'t>) {
+        let mut result: Option<Expression<'t>> = None;
+
+        while let Some(token) = self.lexer.next() {
+            let expr = match token.token_type {
+                TokenType::Text => self.ast_builder.expression_string_literal(
+                    SPAN,
+                    token.content(self.template),
+                    None,
+                ),
+                TokenType::Comment => continue,
+                TokenType::Variable => parse_variable(
+                    &self.ast_builder,
+                    self.template,
+                    (token.at.0 + START_TAG_LEN, token.at.1 - 2 * START_TAG_LEN),
+                ),
+                TokenType::Tag => {
+                    let tag =
+                        lex_tag(token.content(self.template), token.at.0 + START_TAG_LEN).unwrap();
+                    let tag_name = self.template.content(tag.at);
+                    if closing_tags.contains(&tag_name) {
+                        return (
+                            Some(tag),
+                            result.unwrap_or(self.ast_builder.expression_empty_string_literal()),
+                        );
                     }
-                    ast_builder.expression_object_simple(properties)
-                })
-                .collect();
-            self.get_variable_fn(ast_builder, variable_name, filters)
-        } else {
-            ast_builder.expression_string_literal(SPAN, "", None).into()
+                    self.parse_tag(tag)
+                }
+            };
+            result = match result {
+                None => Some(expr),
+                Some(previous) => self
+                    .ast_builder
+                    .expression_binary(SPAN, previous, BinaryOperator::Addition, expr)
+                    .wrap(),
+            }
         }
+
+        if N > 0 {
+            panic!(
+                "Unmet {}: {}",
+                if closing_tags.len() == 1 {
+                    "closing tag"
+                } else {
+                    "any of the closing tags"
+                },
+                closing_tags.join(",")
+            );
+        };
+        (
+            None,
+            result.unwrap_or(self.ast_builder.expression_empty_string_literal()),
+        )
     }
 
-    fn get_variable_fn(
-        &self,
-        ast_builder: &AstBuilder<'t>,
-        variable_name: &'t str,
-        filter_exprs: Vec<Expression<'t>>,
-    ) -> Box<Expression<'t>> {
-        ast_builder
-            .expression_call_simple(
-                ["engine", "variable"],
-                vec![ast_builder.expression_object_simple(vec![
-                    (
-                        "varName",
-                        ast_builder.expression_string_literal(SPAN, variable_name, None),
-                    ),
-                    (
-                        "context",
-                        ast_builder.expression_identifier(SPAN, "context"),
-                    ),
-                    ("filters", ast_builder.expression_array_simple(filter_exprs)),
-                ])],
-            )
-            .into()
-    }
+    pub(crate) fn parse_tag(&mut self, tag: Tag) -> Expression<'t> {
+        let tag_name = tag.content(self.template);
 
-    fn get_translation_fn(
-        &self,
-        ast_builder: &AstBuilder<'t>,
-        text_to_translate: &'t str,
-    ) -> Box<Expression<'t>> {
-        ast_builder
-            .expression_call_simple(
-                ["engine", "translate"],
-                vec![ast_builder.expression_string_literal(SPAN, text_to_translate, None)],
-            )
-            .into()
+        match tag_name {
+            "if" => self.parse_if(tag),
+            "autoescape" | "block" | "comment" | "csrf_token" | "cycle" | "debug" | "filter"
+            | "firstof" | "for" | "ifchanged" | "" | "load" | "lorem" | "now" | "partial"
+            | "partialdef" | "querystring" | "regroup" | "resetcycle" | "spaceless"
+            | "templatetag" | "url" | "verbatim" | "widthratio" | "with" => {
+                todo!("{tag_name} not implemented yet")
+            }
+            // Implementation is not planned for these tags
+            "extends" | "include" => panic!("{tag_name} is unimplemented",),
+            _ => todo!("Custom tags not supported yet ({tag_name})"),
+        }
     }
 
     /** Generates ``export default function(engine, context) { … }`` */
@@ -202,20 +179,29 @@ impl<'t> Parser<'t> {
 mod tests {
     use crate::parser::Parser;
     use dtl_lexer::types::TemplateString;
+    use oxc::allocator::Allocator;
     use regex::Regex;
 
+    fn render_template(template: &str) -> String {
+        let allocator = Allocator::default();
+        Parser::new(&allocator, TemplateString(template)).render()
+    }
+
     fn assert_template(expected: &str, template: &str) {
-        let rendered = Parser::new(TemplateString(template)).render();
-        let actual = Regex::new(r"\s*\n\t?\s*")
-            .unwrap()
-            .replace_all(rendered.trim(), "");
-        assert_eq!(expected, actual);
+        let process_regex = Regex::new(r"[\s\n]+").unwrap();
+        assert_eq!(
+            process_regex.replace_all(expected.trim(), " "),
+            process_regex.replace_all(render_template(template).trim(), " ")
+        );
     }
 
     #[test]
     fn test_empty() {
         assert_template(
-            r#"export default function(engine, _context) {const context = engine.context(_context);return "";}"#,
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "";
+            }"#,
             "",
         );
     }
@@ -223,8 +209,124 @@ mod tests {
     #[test]
     fn test_simple_text() {
         assert_template(
-            r#"export default function(engine, _context) {const context = engine.context(_context);return "<div>Some text here</div>";}"#,
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>Some text here</div>";
+            }"#,
             r#"<div>Some text here</div>"#,
+        );
+    }
+
+    #[test]
+    fn test_variable_with_filters() {
+        assert_ne!(
+            0,
+            render_template(
+                r#"<p>
+                {{ foo|default:1 }}
+                {{ foo|default:1.0 }}
+                {{ foo|default:"bar" }}
+                {{ foo|default:'baz' }}
+                {{ foo|default:_('hello') }}
+                Some text
+                {{ bar|lower }}
+                {{ bar|cut:"foo" }}
+                {{ foo.bar }}
+            </p>"#
+            )
+            .len()
+        )
+    }
+
+    #[test]
+    fn test_variable_literal() {
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + engine.variable({ literal: Symbol.for("None"), context, filters: [] }) + "</div>";
+            }"#,
+            r#"<div>{{ None }}</div>"#,
+        );
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + engine.variable({ literal: true, context, filters: [] }) + "</div>";
+            }"#,
+            r#"<div>{{ True }}</div>"#,
+        );
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + engine.variable({ literal: false, context, filters: [] }) + "</div>";
+            }"#,
+            r#"<div>{{ False }}</div>"#,
+        );
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + engine.variable({ literal: 1.5, context, filters: [] }) + "</div>";
+            }"#,
+            r#"<div>{{ 1.5 }}</div>"#,
+        );
+    }
+
+    #[test]
+    fn test_if_tag() {
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + (engine.variable({ literal: true, context, filters: [] }) ? "This is true" : "") + "</div>";
+            }"#,
+            r#"<div>{% if True %}This is true{% endif %}</div>"#,
+        );
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + (engine.variable({ literal: true, context, filters: [] })
+                    ? "This is true"
+                    : "This is false")
+                + "</div>";
+            }"#,
+            r#"<div>{% if True %}This is true{% else %}This is false{% endif %}</div>"#,
+        );
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + (engine.variable({ literal: true, context, filters: [] })
+                    ? "This is true"
+                    : engine.variable({ varName: "var", context, filters: [] }) === 1.5
+                        ? "Hmm…"
+                        : "")
+                    + "</div>";
+            }"#,
+            r#"<div>{% if True %}This is true{% elif var == 1.5 %}Hmm…{% endif %}</div>"#,
+        );
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + (engine.variable({ literal: true, context, filters: [] })
+                    ? "This is true"
+                    : engine.variable({ varName: "var", context, filters: [] }) === 1.5
+                        ? "Hmm…"
+                        : "This is false")
+                    + "</div>";
+            }"#,
+            r#"<div>{% if True %}This is true{% elif var == 1.5 %}Hmm…{% else %}This is false{% endif %}</div>"#,
+        );
+        assert_template(
+            r#"export default function(engine, _context) {
+                const context = engine.context(_context);
+                return "<div>" + (engine.variable({ varName: "var", context, filters: [{ filterName: "len" }] }) === 0
+                    && engine.variable({ varName: "test.empty", context, filters: [] })
+                        ? "Some condition"
+                        : engine.variable({ varName: "var", context, filters: [{ filterName: "len" }] }) === 2
+                            ? "Some other condition"
+                            : engine.variable({ varName: "test.not_empty", context, filters: [] })
+                                ? "Some third condition"
+                                : "Else branch")
+                    + "</div>";
+                }"#,
+            r#"<div>{% if var|len == 0 and test.empty %}Some condition{% elif var|len == 2 %}Some other condition{% elif test.not_empty %}Some third condition{% else %}Else branch{% endif %}</div>"#,
         );
     }
 }
