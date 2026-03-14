@@ -1,3 +1,4 @@
+use crate::tag_for::ParseFor;
 use crate::tag_if::ParseIf;
 use crate::utils::{SimplerAstMethods, SomeWrap};
 use crate::variable::parse_variable;
@@ -72,10 +73,13 @@ impl<'t> Parser<'t> {
                     None,
                 ),
                 TokenType::Comment => continue,
-                TokenType::Variable => parse_variable(
-                    &self.ast_builder,
-                    self.template,
-                    (token.at.0 + START_TAG_LEN, token.at.1 - 2 * START_TAG_LEN),
+                TokenType::Variable => self.ast_builder.expression_call_simple(
+                    ["engine", "escape"],
+                    vec![parse_variable(
+                        &self.ast_builder,
+                        self.template,
+                        (token.at.0 + START_TAG_LEN, token.at.1 - 2 * START_TAG_LEN),
+                    )],
                 ),
                 TokenType::Tag => {
                     let tag =
@@ -121,8 +125,9 @@ impl<'t> Parser<'t> {
 
         match tag_name {
             "if" => self.parse_if(tag),
+            "for" => self.parse_for(tag),
             "autoescape" | "block" | "comment" | "csrf_token" | "cycle" | "debug" | "filter"
-            | "firstof" | "for" | "ifchanged" | "" | "load" | "lorem" | "now" | "partial"
+            | "firstof" | "ifchanged" | "" | "load" | "lorem" | "now" | "partial"
             | "partialdef" | "querystring" | "regroup" | "resetcycle" | "spaceless"
             | "templatetag" | "url" | "verbatim" | "widthratio" | "with" => {
                 todo!("{tag_name} not implemented yet")
@@ -177,23 +182,7 @@ impl<'t> Parser<'t> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::Parser;
-    use dtl_lexer::types::TemplateString;
-    use oxc::allocator::Allocator;
-    use regex::Regex;
-
-    fn render_template(template: &str) -> String {
-        let allocator = Allocator::default();
-        Parser::new(&allocator, TemplateString(template)).render()
-    }
-
-    fn assert_template(expected: &str, template: &str) {
-        let process_regex = Regex::new(r"[\s\n]+").unwrap();
-        assert_eq!(
-            process_regex.replace_all(expected.trim(), " "),
-            process_regex.replace_all(render_template(template).trim(), " ")
-        );
-    }
+    use crate::tests::{assert_template, render_template};
 
     #[test]
     fn test_empty() {

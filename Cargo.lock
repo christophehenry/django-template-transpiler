@@ -224,7 +224,7 @@ checksum = "d742b56656e8b14d63e7ea9806597b1849ae25412584c8adf78c0f67bd985e66"
 [[package]]
 name = "dtl-lexer"
 version = "0.1.0"
-source = "git+https://github.com/LilyFirefly/django-rusty-templates?rev=94bb0a45da6f388ea516ca2e3a7d71825e9b1068#94bb0a45da6f388ea516ca2e3a7d71825e9b1068"
+source = "git+https://github.com/LilyFirefly/django-rusty-templates?rev=c0a5c0fc66ce7bf3b0ae21cf31b57a20bfee5f5e#c0a5c0fc66ce7bf3b0ae21cf31b57a20bfee5f5e"
 dependencies = [
  "miette",
  "num-bigint",

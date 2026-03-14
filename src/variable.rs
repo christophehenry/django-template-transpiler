@@ -4,7 +4,7 @@ use dtl_lexer::types::{At, TemplateString};
 use dtl_lexer::variable::{Argument, VariableToken, lex_variable_or_filter};
 use num_bigint::Sign;
 use oxc::ast::AstBuilder;
-use oxc::ast::ast::{Expression, NumberBase};
+use oxc::ast::ast::{Expression, NumberBase, PropertyKind};
 use oxc::span::SPAN;
 
 pub(crate) fn parse_variable<'t>(
@@ -22,19 +22,53 @@ pub(crate) fn parse_variable<'t>(
 
     let var_expr = match variable_token {
         VariableToken::Variable => match variable_content {
-            "None" => ("literal", ast_builder.expression_symbol("None")),
+            "None" => (
+                "literal",
+                PropertyKind::Init,
+                ast_builder.expression_symbol("None"),
+            ),
             "True" => (
                 "literal",
+                PropertyKind::Init,
                 ast_builder.expression_boolean_literal(SPAN, true),
             ),
             "False" => (
                 "literal",
+                PropertyKind::Init,
                 ast_builder.expression_boolean_literal(SPAN, false),
             ),
-            _ => (
-                "varName",
-                ast_builder.expression_string_literal(SPAN, template.content(at), None),
-            ),
+            _ => {
+                let variable_names = template
+                    .content(at)
+                    .trim()
+                    .split(".")
+                    .map(|x| {
+                        let (variable_token, _, _) = lex_variable_or_filter(x, 0).unwrap().unwrap();
+                        match variable_token {
+                            VariableToken::Variable => {
+                                ast_builder.expression_string_literal(SPAN, x, None)
+                            }
+                            VariableToken::Int(_) => ast_builder.expression_numeric_literal(
+                                SPAN,
+                                x.parse().unwrap(),
+                                None,
+                                NumberBase::Decimal,
+                            ),
+                            VariableToken::Float(_) => ast_builder.expression_numeric_literal(
+                                SPAN,
+                                x.parse().unwrap(),
+                                None,
+                                NumberBase::Float,
+                            ),
+                        }
+                    })
+                    .collect();
+                (
+                    "varNames",
+                    PropertyKind::Init,
+                    ast_builder.expression_array_simple(variable_names),
+                )
+            }
         },
         VariableToken::Int(num) => {
             let (sign, digits) = num.to_u64_digits();
@@ -44,11 +78,13 @@ pub(crate) fn parse_variable<'t>(
             };
             (
                 "literal",
+                PropertyKind::Init,
                 ast_builder.expression_numeric_literal(SPAN, num, None, NumberBase::Decimal),
             )
         }
         VariableToken::Float(num) => (
             "literal",
+            PropertyKind::Init,
             ast_builder.expression_numeric_literal(SPAN, num, None, NumberBase::Decimal),
         ),
     };
@@ -58,6 +94,7 @@ pub(crate) fn parse_variable<'t>(
             let it = it.unwrap();
             let mut properties = vec![(
                 "filterName",
+                PropertyKind::Init,
                 ast_builder.expression_string_literal(SPAN, it.content(template), None),
             )];
 
@@ -79,7 +116,7 @@ pub(crate) fn parse_variable<'t>(
                     }
                     Argument::Variable(at) => parse_variable(ast_builder, template, at),
                 };
-                properties.push(("argument", arg_expr));
+                properties.push(("argument", PropertyKind::Init, arg_expr));
             }
             ast_builder.expression_object_simple(properties)
         })
