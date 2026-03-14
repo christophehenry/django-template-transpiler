@@ -1,3 +1,9 @@
+/**
+ * @callback RenderFunction
+ * @param {Engine} engine
+ * @param {Context} context
+ */
+
 function todo() {
     throw new Error("Not implemented")
 }
@@ -6,32 +12,36 @@ const None = Symbol.for("None")
 const True = true
 const False = false
 
+const VarNotFound = ""
 
 class Context {
+    #entries = new Map()
+    /** @type {Map<string,any>|Context}*/
+    #parentContext = new Map(Object.entries({None, True, False}))
+
     constructor(dict, parentContext = undefined) {
-        this._entries = new Map(Object.entries(dict))
-
-        this.parentContext = (
-            parentContext instanceof Context
-                ? parentContext
-                : new Proxy(new Map(Object.entries({None, True, False})), {
-                    get(target, prop) {
-                        const value = target.get(prop)
-                        return value !== undefined ? value : ""
-                    }
-                })
-        )
-
-        return new Proxy(this, {
-            get(target, prop) {
-                const value = target._entries.get(prop)
-                return value !== undefined ? value : target.parentContext[prop]
-            }
-        })
+        this.#entries = new Map(Object.entries(dict))
+        if (parentContext instanceof Context) {
+            this.#parentContext = parentContext
+        }
     }
 
     extend(dict) {
         return new Context(dict, this)
+    }
+
+    has(key) {
+        return this.#entries.has(key) || this.#parentContext.has(key)
+    }
+
+    get(key) {
+        if (this.#entries.has(key)) {
+            return this.#entries.get(key)
+        }
+        if (this.#parentContext.has(key)) {
+            return this.#parentContext.get(key)
+        }
+        return VarNotFound
     }
 }
 
@@ -64,10 +74,6 @@ function escape(value) {
     return SafeString.isSafe(value) ? value : new Option(String(value)).innerHTML
 }
 
-function toNumber(value) {
-    return Number.isFinite(value) ? value : parseFloat(String(value))
-}
-
 function toInteger(value) {
     const result = parseInt(value, 10)
     if (!Number.isFinite(result)) {
@@ -77,7 +83,8 @@ function toInteger(value) {
 }
 
 class Filters {
-    constructor() {
+    constructor(engine) {
+        this.engine = engine
         return new Proxy(Object.freeze(this), {
             get(target, prop) {
                 const result = target[prop]
@@ -347,18 +354,93 @@ class Filters {
     }
 }
 
+
+class Tags {
+    #engine
+
+    constructor(engine) {
+        this.#engine = engine
+
+        return new Proxy(Object.freeze(this), {
+            get(target, prop, receiver) {
+                if (Reflect.has(target, prop)) {
+                    return Reflect.get(target, prop, receiver)
+                }
+                if (Reflect.has(target, `do_${prop}`)) {
+                    return Reflect.get(target, `do_${prop}`, receiver).bind(target)
+                }
+                throw new Error(`Unknown tag: ${prop}`)
+            }
+        })
+    }
+
+    /**
+     *
+     * @param params
+     * @param {Context} params.context
+     * @param {Iterable} params.iter
+     * @param {function(any): Object<string, any>} params.forloopVariables
+     * @param {boolean} params.reversed
+     * @param {RenderFunction} params.render
+     * @param {RenderFunction | null} params.emptyRender
+     * @returns {string}
+     */
+    do_for({context, iter, forloopVariables, render, emptyRender = null, reversed = false}) {
+        const parentloop = context.get("forloop") || None
+        const container = Array.from(iter)
+
+        function getContext(counter, value) {
+            return context.extend({
+                ...forloopVariables(value),
+                forloop: {
+                    get counter() {
+                        return counter + 1
+                    },
+                    get counter0() {
+                        return counter
+                    },
+                    get revcounter() {
+                        return container.length - counter
+                    },
+                    get revcounter0() {
+                        return container.length - counter - 1
+                    },
+                    get first() {
+                        return counter === 0
+                    },
+                    get last() {
+                        return counter === container.length - 1
+                    },
+                    get length() {
+                        return container.length
+                    },
+                    parentloop,
+                }
+            })
+        }
+
+        if (container.length === 0) {
+            return emptyRender?.call(null, this.#engine, context) ?? VarNotFound
+        }
+        const reducer = reversed ? container.reduceRight.bind(container) : container.reduce.bind(container)
+        return reducer((acc, value, idx) => acc + render(this.#engine, getContext(idx, value)), "")
+    }
+}
+
 const utils = Object.freeze({
     contains(first, second) {
         return Array.from(first).contains(second)
     },
     do_is(first, second) {
         return first === second
-    }
+    },
 })
 
 class Engine {
+    #tags = new Tags(this)
+    #filters = new Filters(this)
+
     constructor() {
-        this._filters = new Filters()
         this._ = utils
     }
 
@@ -371,24 +453,55 @@ class Engine {
     }
 
     /**
-     * @param {string} varName
-     * @param {any} literal
+     * @param {string[]|undefined} varNames
+     * @param {any|undefined} literal
      * @param {Context} context
-     * @param {Filters} filters
-     * @returns {string}
+     * @param {string[]} filters
+     * @returns {any}
      */
-    variable({varName, literal, context, filters}) {
-        let value = literal || context[varName]
-        for (const {filterName, argument} of filters) {
-            value = escape(this._filters[filterName](value, argument))
+    variable({varNames = [], literal = undefined, context, filters}) {
+        if (literal !== undefined) {
+            return `${literal}`
         }
-        return value
+
+        let target = context
+        for (let varName of varNames) {
+            const orig = target
+            if (target instanceof Context || target instanceof Map) {
+                target = target.get(varName)
+            } else if ((target instanceof Set && target.has(varName)) || Object.hasOwn(target, varName)) {
+                target = target[varName]
+            } else {
+                target = VarNotFound
+            }
+
+            if (typeof target === "function") {
+                target = target.call(orig)
+            } else if (target === null || target === undefined) {
+                target = VarNotFound
+            }
+        }
+
+        for (const {filterName, argument} of filters) {
+            target = this.#filters[filterName](target, argument)
+        }
+
+        return target
+    }
+
+    escape(value) {
+        return escape(`${value}`)
+    }
+
+    tag({tagName, args, context}) {
+        return this.#tags[tagName]({...args, context})
     }
 
     translate(value) {
         console.warn("Translation not implemented")
         return value
     }
+
 
 }
 

@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.28.0", features = ["num-bigint"] }
 regex = "1.11.2"
 oxc = { version = "0.98.0", features = ["full"] }
-dtl-lexer = { git = "https://github.com/LilyFirefly/django-rusty-templates", rev = "94bb0a45da6f388ea516ca2e3a7d71825e9b1068" }
+dtl-lexer = { git = "https://github.com/LilyFirefly/django-rusty-templates", rev = "c0a5c0fc66ce7bf3b0ae21cf31b57a20bfee5f5e" }
 num-bigint = "0.4.6"

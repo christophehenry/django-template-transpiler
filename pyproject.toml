@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "django-template-transpiler"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -18,10 +18,14 @@ python-source = "python"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
+django_debug_mode = "true"
+addopts = ["--import-mode=importlib"]
+pythonpath = ["tests"]
+
 
 [dependency-groups]
 dev = [
-    "django",
+    "django>6",
     "maturin",
     "pytest",
     "pytest-django",

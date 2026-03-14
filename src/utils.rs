@@ -51,7 +51,7 @@ pub(super) trait SimplerAstMethods<'a> {
 
     fn expression_object_simple(
         &self,
-        properties: Vec<(&'a str, Expression<'a>)>,
+        properties: Vec<(&'a str, PropertyKind, Expression<'a>)>,
     ) -> Expression<'a>;
 
     fn expression_array_simple(&self, items: Vec<Expression<'a>>) -> Expression<'a>;
@@ -69,6 +69,17 @@ pub(super) trait SimplerAstMethods<'a> {
         consequent: Expression<'a>,
         alternate: Expression<'a>,
     ) -> Expression<'a>;
+
+    fn expression_arrow_function_simple<A, B>(
+        &self,
+        expression: bool,
+        r#async: bool,
+        params: A,
+        body: B,
+    ) -> Expression<'a>
+    where
+        A: Into<Vec<&'a str>>,
+        B: Into<Vec<Expression<'a>>>;
 }
 impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
     fn expression_empty_string_literal(&self) -> Expression<'a> {
@@ -132,14 +143,14 @@ impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
 
     fn expression_object_simple(
         &self,
-        properties: Vec<(&'a str, Expression<'a>)>,
+        properties: Vec<(&'a str, PropertyKind, Expression<'a>)>,
     ) -> Expression<'a> {
         self.expression_object(
             SPAN,
-            self.vec_from_iter(properties.into_iter().map(|(name, expr)| {
+            self.vec_from_iter(properties.into_iter().map(|(name, kind, expr)| {
                 self.object_property_kind_object_property(
                     SPAN,
-                    PropertyKind::Init,
+                    kind,
                     self.property_key_static_identifier(SPAN, name),
                     expr,
                     false,
@@ -173,7 +184,7 @@ impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
         self.declaration_variable(
             SPAN,
             VariableDeclarationKind::Const,
-            self.vec_from_array([self.variable_declarator(
+            self.vec1(self.variable_declarator(
                 SPAN,
                 kind,
                 self.binding_pattern(
@@ -183,7 +194,7 @@ impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
                 ),
                 init.wrap(),
                 false,
-            )]),
+            )),
             false,
         )
     }
@@ -204,13 +215,43 @@ impl<'a> SimplerAstMethods<'a> for AstBuilder<'a> {
             ),
         )
     }
+
+    fn expression_arrow_function_simple<A, B>(
+        &self,
+        expression: bool,
+        r#async: bool,
+        params: A,
+        body: B,
+    ) -> Expression<'a>
+    where
+        A: Into<Vec<&'a str>>,
+        B: Into<Vec<Expression<'a>>>,
+    {
+        self.expression_arrow_function(
+            SPAN,
+            expression,
+            r#async,
+            NONE,
+            self.formal_parameters_simple(params),
+            NONE,
+            self.function_body(
+                SPAN,
+                self.vec(),
+                self.vec_from_iter(
+                    body.into()
+                        .into_iter()
+                        .map(|expr| self.statement_expression(SPAN, expr)),
+                ),
+            ),
+        )
+    }
 }
 
 pub(super) trait EngineMethods<'a> {
     fn get_translation_fn(&self, text_to_translate: &'a str) -> Expression<'a>;
     fn get_variable_fn(
         &self,
-        var_expr: (&'a str, Expression<'a>),
+        var_expr: (&'a str, PropertyKind, Expression<'a>),
         filter_exprs: Vec<Expression<'a>>,
     ) -> Expression<'a>;
 }
@@ -225,15 +266,23 @@ impl<'a> EngineMethods<'a> for AstBuilder<'a> {
 
     fn get_variable_fn(
         &self,
-        var_expr: (&'a str, Expression<'a>),
+        var_expr: (&'a str, PropertyKind, Expression<'a>),
         filter_exprs: Vec<Expression<'a>>,
     ) -> Expression<'a> {
         self.expression_call_simple(
             ["engine", "variable"],
             vec![self.expression_object_simple(vec![
                 var_expr,
-                ("context", self.expression_identifier(SPAN, "context")),
-                ("filters", self.expression_array_simple(filter_exprs)),
+                (
+                    "context",
+                    PropertyKind::Init,
+                    self.expression_identifier(SPAN, "context"),
+                ),
+                (
+                    "filters",
+                    PropertyKind::Init,
+                    self.expression_array_simple(filter_exprs),
+                ),
             ])],
         )
     }
