@@ -1,0 +1,14 @@
+version: 2
+build:
+  os: ubuntu-lts-latest
+  tools:
+    python: latest
+
+python:
+  install:
+    - method: uv
+      command: sync
+      groups: [ "docs" ]
+
+sphinx:
+  configuration: docs/source/conf.py
