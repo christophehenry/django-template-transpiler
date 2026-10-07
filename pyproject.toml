@@ -3,25 +3,24 @@ requires = ["maturin>=1.7,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "django-template-transpiler"
 requires-python = ">=3.12"
+name = "django-template-transpiler"
+authors = [{ name = "Christophe Henry", email = "contact@c-henry.fr" }]
+description = """
+Django Template Transpiler is a library to parse Django template and produce JS code to render them in the frontend.
+It is not designed to replace either Django's template engine or any other frontend templating
+framework like Vue or React. Instead, it is design to supplement DTL in situations where is is
+not convenient or desirable to render parts or the UI on the server using a framework like
+HTMX or Hotwired's Turbo.
+"""
 classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Django",
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
-
-[tool.maturin]
-features = ["pyo3/extension-module"]
-python-source = "python"
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "tests.settings"
-django_debug_mode = "true"
-addopts = ["--import-mode=importlib"]
-pythonpath = ["tests"]
-
 
 [dependency-groups]
 dev = [
@@ -34,6 +33,22 @@ dev = [
     "ruff",
     "pre-commit",
 ]
+docs = [
+    "myst-parser>=5.1.0",
+    "sphinx>=9.1.0",
+    "sphinx-pyproject>=0.3.0",
+    "sphinx-rtd-theme>=3.1.0",
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+django_debug_mode = "true"
+addopts = ["--import-mode=importlib"]
+pythonpath = ["tests"]
 
 [tool.ruff]
 target-version = "py310"
