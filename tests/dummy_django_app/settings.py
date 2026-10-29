@@ -1,7 +1,6 @@
-from importlib.resources import files as importlib_resources
 from pathlib import Path
 
-import django_template_transpiler
+from django.conf import global_settings
 
 DEBUG = True
 
@@ -11,15 +10,16 @@ SECRET_KEY = "test"
 
 INSTALLED_APPS = [
     "django.contrib.staticfiles",
-    "tests.apps.DummyAppConfig",
+    "django_template_transpiler",
+    "tests.dummy_django_app",
 ]
 
-ROOT_URLCONF = "tests.urls"
+ROOT_URLCONF = "tests.dummy_django_app.urls"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ["tests/templates"],
+        "DIRS": ["tests/dummy_django_app/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -38,4 +38,7 @@ DATABASES = {
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
-STATICFILES_DIRS = [importlib_resources(django_template_transpiler).joinpath("data")]
+STATICFILES_FINDERS = [
+    *global_settings.STATICFILES_FINDERS,
+    "django_template_transpiler.finders.DjangoTemplateTranspilerFinder",
+]

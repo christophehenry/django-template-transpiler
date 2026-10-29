@@ -76,5 +76,6 @@ docs/_build/
 # Django repo cache
 scripts/.django
 
-# JS generation in tests
-/tests/static/
+# Tests artefacts
+/test-results/
+/tests/dummy_django_app/static/
