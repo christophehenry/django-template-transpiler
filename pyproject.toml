@@ -36,8 +36,8 @@ dev = [
 docs = [
     "myst-parser>=5.1.0",
     "sphinx>=9.1.0",
-    "sphinx-pyproject>=0.3.0",
     "sphinx-rtd-theme>=3.1.0",
+    "sphinxcontrib-django>=2.5",
 ]
 
 [tool.maturin]
@@ -45,13 +45,15 @@ features = ["pyo3/extension-module"]
 python-source = "python"
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "tests.settings"
+DJANGO_SETTINGS_MODULE = "tests.dummy_django_app.settings"
+django_find_project = "false"
 django_debug_mode = "true"
 addopts = ["--import-mode=importlib"]
-pythonpath = ["tests"]
+pythonpath = [".", "tests", "python"]
 
 [tool.ruff]
 target-version = "py310"
+line-length = 120
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.

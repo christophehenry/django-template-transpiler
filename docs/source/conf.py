@@ -1,19 +1,13 @@
 import tomllib
-from sphinx_pyproject import SphinxConfig
 
 with open("../../Cargo.toml", "rb") as f:
     cargo_toml = tomllib.load(f)
 
-config = SphinxConfig(
-    "../../pyproject.toml",
-    globalns=globals(),
-    config_overrides={
-        "name": "Django Template Transpiler",
-        "version": cargo_toml["package"]["version"],
-    },
-)
+project = "Django Template Transpiler"
+version = cargo_toml["package"]["version"]
+author = "Christophe Henry"
 
-extensions = ["myst_parser", "sphinx_rtd_theme"]
+extensions = ["sphinxcontrib_django", "sphinx.ext.autodoc", "myst_parser", "sphinx_rtd_theme"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -25,3 +19,5 @@ source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
+
+django_settings = "django_template_transpiler.settings"
