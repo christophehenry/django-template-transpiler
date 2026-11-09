@@ -19,9 +19,7 @@ os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 def transpile_template(settings):
     def func(template_name):
         template: Template = select_template(
-            template_name
-            if isinstance(template_name, (tuple, list))
-            else (template_name,)
+            template_name if isinstance(template_name, (tuple, list)) else (template_name,)
         )
 
         dest = Path(settings.STATIC_ROOT)
