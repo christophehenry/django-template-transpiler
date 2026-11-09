@@ -34,7 +34,7 @@ repos:
       - id: cargo-clippy
         args: [ "--all-targets", "--all-features" ]
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 6a3b6bf1868b70929458f1d4aa0a08c647b3ad45  # frozen: 0.9.7
+    rev: 0.13.7
     hooks:
       - id: uv-lock
   - repo: https://github.com/woodruffw/zizmor-pre-commit
