@@ -17,9 +17,7 @@ def test_for_tag01(live_server, page: Page):
         template="{% for val in values %}<span>{{ val }}</span>{% endfor %}",
         js_context="{values: [1, 2, 3]}",
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "<span>1</span><span>2</span><span>3</span>",
@@ -32,9 +30,7 @@ def test_for_tag02(live_server, page: Page):
         template="{% for val in values reversed %}<span>{{ val }}</span>{% endfor %}",
         js_context="{values: [1, 2, 3]}",
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "<span>3</span><span>2</span><span>1</span>",
@@ -47,9 +43,7 @@ def test_for_tag_vars01(live_server, page: Page):
         template="{% for val in values %}{{ forloop.counter }}{% endfor %}",
         js_context='{"values": [6, 6, 6]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(page.locator("main").inner_html(), "123")
 
 
@@ -59,9 +53,7 @@ def test_for_tag_vars02(live_server, page: Page):
         template="{% for val in values %}{{ forloop.counter0 }}{% endfor %}",
         js_context='{"values": [6, 6, 6]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(page.locator("main").inner_html(), "012")
 
 
@@ -71,9 +63,7 @@ def test_for_tag_vars03(live_server, page: Page):
         template="{% for val in values %}{{ forloop.revcounter }}{% endfor %}",
         js_context='{"values": [6, 6, 6]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(page.locator("main").inner_html(), "321")
 
 
@@ -83,9 +73,7 @@ def test_for_tag_vars04(live_server, page: Page):
         template="{% for val in values %}{{ forloop.revcounter0 }}{% endfor %}",
         js_context='{"values": [6, 6, 6]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(page.locator("main").inner_html(), "210")
 
 
@@ -95,9 +83,7 @@ def test_for_tag_vars05(live_server, page: Page):
         template="{% for val in values %}{% if forloop.first %}f{% else %}x{% endif %}{% endfor %}",
         js_context='{"values": [6, 6, 6]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "fxx",
@@ -110,9 +96,7 @@ def test_for_tag_vars06(live_server, page: Page):
         template="{% for val in values %}{% if forloop.last %}l{% else %}x{% endif %}{% endfor %}",
         js_context='{"values": [6, 6, 6]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "xxl",
@@ -125,9 +109,7 @@ def test_for_tag_unpack01(live_server, page: Page):
         template="{% for key,value in items %}{{ key }}:{{ value }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "one:1/two:2/",
@@ -140,9 +122,7 @@ def test_for_tag_unpack03(live_server, page: Page):
         template="{% for key, value in items %}{{ key }}:{{ value }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "one:1/two:2/",
@@ -156,9 +136,7 @@ def test_for_tag_unpack04(live_server, page: Page):
         template="{% for key , value in items %}{{ key }}:{{ value }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "one:1/two:2/",
@@ -172,9 +150,7 @@ def test_for_tag_unpack06(live_server, page: Page):
         template="{% for key value in items %}{{ key }}:{{ value }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -184,9 +160,7 @@ def test_for_tag_unpack07(live_server, page: Page):
         template="{% for key,,value in items %}{{ key }}:{{ value }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -196,9 +170,7 @@ def test_for_tag_unpack08(live_server, page: Page):
         template="{% for key,value, in items %}{{ key }}:{{ value }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -208,9 +180,7 @@ def test_for_tag_double_quote(live_server, page: Page):
         template='{% for "k" in items %}{{ "k" }}/{% endfor %}',
         js_context='{"items": [1, 2]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -220,9 +190,7 @@ def test_for_tag_single_quote(live_server, page: Page):
         template="{% for 'k' in items %}{{ k }}/{% endfor %}",
         js_context='{"items": [1, 2]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -232,9 +200,7 @@ def test_for_tag_vertical_bar(live_server, page: Page):
         template="{% for k|upper in items %}{{ k|upper }}/{% endfor %}",
         js_context='{"items": [1, 2]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 def test_for_tag_unpack09(live_server, page: Page):
@@ -243,9 +209,7 @@ def test_for_tag_unpack09(live_server, page: Page):
         template="{% for val in items %}{{ val.0 }}:{{ val.1 }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "one:1/two:2/",
@@ -258,9 +222,7 @@ def test_for_tag_unpack13(live_server, page: Page):
         template="{% for x,y,z in items %}{{ x }}:{{ y }},{{ z }}/{% endfor %}",
         js_context='{"items": [["one", 1, "carrot"], ["two", 2, "cheese"]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "one:1,carrot/two:2,cheese/",
@@ -273,9 +235,7 @@ def test_for_tag_empty01(live_server, page: Page):
         template="{% for val in values %}{{ val }}{% empty %}empty text{% endfor %}",
         js_context='{"items": [1, 2, 3]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "empty text",
@@ -288,9 +248,7 @@ def test_for_tag_empty02(live_server, page: Page):
         template="{% for val in values %}{{ val }}{% empty %}values array empty{% endfor %}",
         js_context='{"items": []}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "values array empty",
@@ -303,9 +261,7 @@ def test_for_tag_empty03(live_server, page: Page):
         template="{% for val in values %}{{ val }}{% empty %}values array not found{% endfor %}",
         js_context="{}",
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "values array not found",
@@ -318,9 +274,7 @@ def test_for_tag_unpack_strs(live_server, page: Page):
         template="{% for x,y in items %}{{ x }}:{{ y }}/{% endfor %}",
         js_context='{"items": ["ab", "ac"]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "a:b/a:c/",
@@ -334,9 +288,7 @@ def test_for_tag_unpack10(live_server, page: Page):
         template="{% for x,y in items %}{{ x }}:{{ y }}/{% endfor %}",
         js_context='{"items": [["one", 1, "carrot"], ["two", 2, "orange"]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -346,9 +298,7 @@ def test_for_tag_unpack11(live_server, page: Page):
         template="{% for x,y,z in items %}{{ x }}:{{ y }},{{ z }}/{% endfor %}",
         js_context='{"items": [["one", 1], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -358,9 +308,7 @@ def test_for_tag_unpack12(live_server, page: Page):
         template="{% for x,y,z in items %}{{ x }}:{{ y }},{{ z }}/{% endfor %}",
         js_context='{"items": [["one", 1, "carrot"], ["two", 2]]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -370,9 +318,7 @@ def test_for_tag_unpack14(live_server, page: Page):
         template="{% for x,y in items %}{{ x }}:{{ y }}/{% endfor %}",
         js_context='{"items": [1, 2]}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
 
 
 @pytest.mark.skip("Error handling not implemented yet")
@@ -382,6 +328,4 @@ def test_for_tag_invalid_in_keyword(live_server, page: Page):
         template="{% for x from items %}{{ x }}{% endfor %}",
         js_context="{}",
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")

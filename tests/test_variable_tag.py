@@ -21,9 +21,7 @@ def test_variable_tag01(live_server, page: Page):
             </p>""",
         js_context='{"bar": "baz"}',
     ) as test_render_script:
-        page.goto(
-            f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}"
-        )
+        page.goto(f"{live_server.url}{reverse('tag_test', kwargs={'render_script_name': test_render_script.name})}")
         assertHTMLEqual(
             page.locator("main").inner_html(),
             "<p> 1 1 bar baz hello Some text baz baz </p>",
