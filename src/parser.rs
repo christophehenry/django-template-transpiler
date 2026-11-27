@@ -232,28 +232,30 @@ mod tests {
         assert_template(
             r#"export default function(engine, _context) {
                 const context = engine.context(_context);
-                return "<div>" + engine.variable({ literal: Symbol.for("None"), context, filters: [] }) + "</div>";
+                return "<div>"
+                + engine.escape(engine.variable({ literal: Symbol.for("None"), context, filters: [] }))
+                + "</div>";
             }"#,
             r#"<div>{{ None }}</div>"#,
         );
         assert_template(
             r#"export default function(engine, _context) {
                 const context = engine.context(_context);
-                return "<div>" + engine.variable({ literal: true, context, filters: [] }) + "</div>";
+                return "<div>" + engine.escape(engine.variable({ literal: true, context, filters: [] })) + "</div>";
             }"#,
             r#"<div>{{ True }}</div>"#,
         );
         assert_template(
             r#"export default function(engine, _context) {
                 const context = engine.context(_context);
-                return "<div>" + engine.variable({ literal: false, context, filters: [] }) + "</div>";
+                return "<div>" + engine.escape(engine.variable({ literal: false, context, filters: [] })) + "</div>";
             }"#,
             r#"<div>{{ False }}</div>"#,
         );
         assert_template(
             r#"export default function(engine, _context) {
                 const context = engine.context(_context);
-                return "<div>" + engine.variable({ literal: 1.5, context, filters: [] }) + "</div>";
+                return "<div>" + engine.escape(engine.variable({ literal: 1.5, context, filters: [] })) + "</div>";
             }"#,
             r#"<div>{{ 1.5 }}</div>"#,
         );
@@ -283,7 +285,7 @@ mod tests {
                 const context = engine.context(_context);
                 return "<div>" + (engine.variable({ literal: true, context, filters: [] })
                     ? "This is true"
-                    : engine.variable({ varName: "var", context, filters: [] }) === 1.5
+                    : engine.variable({ varNames: ["var"], context, filters: [] }) === 1.5
                         ? "Hmm…"
                         : "")
                     + "</div>";
@@ -295,7 +297,7 @@ mod tests {
                 const context = engine.context(_context);
                 return "<div>" + (engine.variable({ literal: true, context, filters: [] })
                     ? "This is true"
-                    : engine.variable({ varName: "var", context, filters: [] }) === 1.5
+                    : engine.variable({ varNames: ["var"], context, filters: [] }) === 1.5
                         ? "Hmm…"
                         : "This is false")
                     + "</div>";
@@ -305,12 +307,12 @@ mod tests {
         assert_template(
             r#"export default function(engine, _context) {
                 const context = engine.context(_context);
-                return "<div>" + (engine.variable({ varName: "var", context, filters: [{ filterName: "len" }] }) === 0
-                    && engine.variable({ varName: "test.empty", context, filters: [] })
+                return "<div>" + (engine.variable({ varNames: ["var"], context, filters: [{ filterName: "len" }] }) === 0
+                    && engine.variable({ varNames: ["test", "empty"], context, filters: [] })
                         ? "Some condition"
-                        : engine.variable({ varName: "var", context, filters: [{ filterName: "len" }] }) === 2
+                        : engine.variable({ varNames: ["var"], context, filters: [{ filterName: "len" }] }) === 2
                             ? "Some other condition"
-                            : engine.variable({ varName: "test.not_empty", context, filters: [] })
+                            : engine.variable({ varNames: ["test", "not_empty"], context, filters: [] })
                                 ? "Some third condition"
                                 : "Else branch")
                     + "</div>";
