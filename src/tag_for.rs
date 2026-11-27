@@ -261,9 +261,28 @@ mod tests {
     #[test]
     fn test_empty() {
         assert_template(
+            // language=js
             r#"export default function(engine, _context) {
                 const context = engine.context(_context);
-                return "";
+                return engine.tag({
+                    tagName: "for",
+                    context,
+                    args: {
+                        get iter() {
+                            return engine.variable({ varNames: ["items"], context, filters: [] });
+                        },
+                        render: (engine, context) =>
+                            engine.escape(engine.variable({ varNames: ["key"], context, filters: [] }))
+                            + ":"
+                            + engine.escape(engine.variable({ varNames: ["value"], context, filters: [] }))
+                            + "/",
+                        emptyRender: null,
+                        reversed: false,
+                        forloopVariables: function(item) {
+                            const [key, value] = item; return { key, value };
+                        }
+                    }
+                });
             }"#,
             "{% for key , value in items %}{{ key }}:{{ value }}/{% endfor %}",
         );
